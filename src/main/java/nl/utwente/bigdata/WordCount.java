@@ -17,12 +17,9 @@
 package nl.utwente.bigdata;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-  
+import java.util.regex.Pattern;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -30,31 +27,25 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Logger;
-
-
-import com.google.common.collect.Maps;
-
-import edu.umd.cloud9.collection.wikipedia.WikipediaPage;
 
 /**
  * Tool for building the mapping between Wikipedia internal ids (docids) and sequentially-numbered
@@ -64,11 +55,17 @@ import edu.umd.cloud9.collection.wikipedia.WikipediaPage;
 public class WordCount extends Configured implements Tool {
   private static final Logger LOG = Logger.getLogger(WordCount.class);
 
+  /*
+   * Mapper
+   */
   public static class MyMapper extends Mapper<Writable, Text, Text, IntWritable> {
-
+	// have to be equal to the last two type arguments to Mapper<> above
+	public static final Class<?> KOUT = Text.class;
+	public static final Class<?> VOUT = IntWritable.class;
+	
     @Override
-    public void setup(Context context) {
-      
+    public void setup(Context context) throws IOException, InterruptedException {
+      super.setup(context);
     }
   
     @Override
@@ -81,9 +78,62 @@ public class WordCount extends Configured implements Tool {
         }
     }
     
+    @Override
+    public void cleanup(Context context) throws IOException, InterruptedException {
+    	super.cleanup(context);
+    }
   }
   
+  /*
+   * Combiner
+   */
+  public static class MyCombiner extends Reducer<Text, IntWritable, Text, IntWritable> {
+	  @Override
+	    public void setup(Context context) throws IOException, InterruptedException {
+	      super.setup(context);
+	    }
+	    
+	    @Override
+	    public void reduce(Text key, Iterable<IntWritable> values, Context context)
+	        throws IOException, InterruptedException {
+	          int sum = 0;
+	          for (IntWritable val: values) {
+	            sum += val.get();
+	          }
+	          context.write(key, new IntWritable(sum));
+	    }
+	    
+	    @Override
+	    public void cleanup(Context context) throws IOException, InterruptedException {
+	    	super.cleanup(context);
+	    } 
+  }
+  
+  /*
+   * Partitioner
+   */
+  public static class MyPartitioner extends Partitioner<Text, IntWritable> {
+
+	@Override
+	public int getPartition(Text key, IntWritable value, int numPartitions) {
+		return key.toString().hashCode() % numPartitions;
+	}
+	  
+  }
+  
+  /*
+   * Reducer
+   */
   public static class MyReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+	// have to be equal to the last two type arguments to Reducer<> above
+	public static final Class<?> KOUT = Text.class;
+	public static final Class<?> VOUT = IntWritable.class;
+	
+    @Override
+    public void setup(Context context) throws IOException, InterruptedException {
+      super.setup(context);
+    }
+    
     @Override
     public void reduce(Text key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
@@ -93,32 +143,71 @@ public class WordCount extends Configured implements Tool {
           }
           context.write(key, new IntWritable(sum));
     }
+    
+    @Override
+    public void cleanup(Context context) throws IOException, InterruptedException {
+    	super.cleanup(context);
+    }
   }
-
-  public void run(String inputPath, String tmpPath) throws Exception {
+  
+  public void run(String inputPath, String outPath) throws Exception {
 
     Job job = Job.getInstance(getConf());
     job.setJarByClass(WordCount.class);
     job.setJobName(String.format("%s-task1[%s, %s]", 
         this.getClass().getName(), 
         inputPath, 
-        tmpPath));
-    //job.setNumReduceTasks(1);
+        outPath));
+    
+ // -- check if output directory already exists.
+    Path outDir = new Path(outPath);
+	if (FileSystem.get(job.getConfiguration()).exists(outDir)) {
+		FileSystem.get(job.getConfiguration()).delete(outDir, true);
+	}
 
-    job.setInputFormatClass(SequenceFileInputFormat.class);
-    FileInputFormat.setInputPaths(job, new Path(inputPath));
-    
-    FileOutputFormat.setCompressOutput(job, false);
+	// ---- Input (Format) Options
+	String inputFormat = "text";
+	if (inputFormat.equalsIgnoreCase("text")) {
+		job.setInputFormatClass(TextInputFormat.class);
+	} else if (inputFormat.equalsIgnoreCase("text")) {
+		job.setInputFormatClass(SequenceFileInputFormat.class);
+	} 	
+	job.setInputFormatClass(TextInputFormat.class);	
+	Utils.recursivelyAddInputPaths(job, new Path(inputPath));
+	//addCacheFiles(job, new String[] { termStatFile, queryFile, minMaxFile });
 
-    job.setMapperClass(MyMapper.class); 
-    job.setReducerClass(MyReducer.class);
-    job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(IntWritable.class);
-    
-    job.setOutputFormatClass(SequenceFileOutputFormat.class);
-    FileOutputFormat.setOutputPath(job, new Path(tmpPath));
-    
-    job.waitForCompletion(true);
+	// ---- Mapper
+	job.setMapperClass(MyMapper.class);
+	job.setMapOutputKeyClass(MyMapper.KOUT);
+	job.setMapOutputValueClass(MyMapper.VOUT);
+
+	// ---- Combiner
+	//job.setCombinerClass(MyCombiner.class);
+
+	// ---- Partitioner
+	//job.setPartitionerClass(MyPartitioner.class);
+
+	// ---- Reducer
+	// set the number of reducers to influence the number of output files
+	//job.setNumReduceTasks(100);
+	job.setReducerClass(MyReducer.class);
+	job.setOutputKeyClass(MyReducer.KOUT);
+	job.setOutputValueClass(MyReducer.VOUT);
+
+	// ---- Output Options
+	String outputFormat = "sequence";
+	if (outputFormat.equalsIgnoreCase("sequence")) {
+		job.setOutputFormatClass(SequenceFileOutputFormat.class);
+	} else if (outputFormat.equalsIgnoreCase("text")) {
+		job.setOutputFormatClass(TextOutputFormat.class);
+	} else if (outputFormat.equalsIgnoreCase("null")) {
+		job.setOutputFormatClass(NullOutputFormat.class);
+	} 	
+	FileOutputFormat.setOutputPath(job, outDir);
+	FileOutputFormat.setCompressOutput(job, false);
+	
+	// ---- Start job
+	job.waitForCompletion(true);
     return;
   }
   

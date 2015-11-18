@@ -3,13 +3,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>nl.utwente</groupId>
-	<artifactId>DeepWiki</artifactId>
+	<groupId>nl.utwente.bigdata</groupId>
+	<artifactId>CtitMapred</artifactId>
 	<packaging>jar</packaging>
-	<name>DeepWiki</name>
+	<name>CtitMapred</name>
 	<version>1.0.0-SNAPSHOT</version>
-	<description>University of Maryland's Hadoop Library</description>
-	<url>http://cloud9lib.org</url>
 	<licenses>
 		<license>
 			<name>The Apache Software License, Version 2.0</name>
