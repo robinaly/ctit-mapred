@@ -3,6 +3,7 @@ package nl.utwente.bigdata;
 import java.io.IOException;
 import java.net.URI;
 
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -36,6 +37,17 @@ public class Utils {
 				recursivelyAddInputPaths(job, status.getPath());
 			}
 			FileInputFormat.addInputPath(job, status.getPath());
+		}
+	}
+	
+	protected static void addCacheFiles(Job job, String[] strings) throws IOException {
+		FileSystem fs = FileSystem.get(job.getConfiguration());
+		for (String file : strings) {
+			Path p = new Path(file);
+			if (!fs.exists(p)) {
+				fs.copyFromLocalFile(p, p);
+			}
+			DistributedCache.addCacheFile(p.toUri(), job.getConfiguration());
 		}
 	}
 }

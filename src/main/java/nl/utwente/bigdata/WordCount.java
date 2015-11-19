@@ -171,10 +171,10 @@ public class WordCount extends Configured implements Tool {
 		job.setInputFormatClass(TextInputFormat.class);
 	} else if (inputFormat.equalsIgnoreCase("text")) {
 		job.setInputFormatClass(SequenceFileInputFormat.class);
-	} 	
-	job.setInputFormatClass(TextInputFormat.class);	
+	}		
 	Utils.recursivelyAddInputPaths(job, new Path(inputPath));
-	//addCacheFiles(job, new String[] { termStatFile, queryFile, minMaxFile });
+	// Add files that should be available localy at each mapper
+	// Utils.addCacheFiles(job, new String[] { });
 
 	// ---- Mapper
 	job.setMapperClass(MyMapper.class);
