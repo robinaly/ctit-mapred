@@ -43,7 +43,7 @@ public class Utils {
 	protected static void addCacheFiles(Job job, String[] strings) throws IOException {
 		FileSystem fs = FileSystem.get(job.getConfiguration());
 		for (String file : strings) {
-			Path p = new Path(file);
+			Path p = new Path(file);	
 			if (!fs.exists(p)) {
 				fs.copyFromLocalFile(p, p);
 			}

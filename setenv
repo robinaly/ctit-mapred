@@ -1,0 +1,9 @@
+export PROJECT_HOME=$PWD
+export LIBJARS=$(echo $PROJECT_HOME/target/lib/*.jar | tr ' ' ',')
+CLASS_PREFIX=nl.utwente.bigdata
+
+function runTool() {
+        name=$1
+        shift   
+        hadoop jar target/*-SNAPSHOT.jar $CLASS_PREFIX.$name -libjars ${LIBJARS} $@
+}
