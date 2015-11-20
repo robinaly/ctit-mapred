@@ -13,15 +13,18 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
-public class WordCountTest {
-
+public class TemplateToolTest {
+	// has to match the definitions in TemplateTool.java
 	private MapDriver<Writable, Text, Text, IntWritable> mapDriver;
 	private ReduceDriver<Text, IntWritable, Text, IntWritable> reduceDriver;
 
+	/*
+	 * Setup the 
+	 */
 	@Before
 	public void setUp() {
-		WordCount.MyMapper mapper = new WordCount.MyMapper();
-		WordCount.MyReducer reducer = new WordCount.MyReducer();
+		TemplateTool.MyMapper mapper = new TemplateTool.MyMapper();
+		TemplateTool.MyReducer reducer = new TemplateTool.MyReducer();
 
 		mapDriver = MapDriver.newMapDriver(mapper);
 		reduceDriver = ReduceDriver.newReduceDriver(reducer);

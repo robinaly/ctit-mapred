@@ -10,6 +10,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonParser;
+
 public class Utils {
 	public static void recursivelyAddInputPaths(Job job, Path path)
 			throws IOException {
@@ -40,7 +43,7 @@ public class Utils {
 		}
 	}
 	
-	protected static void addCacheFiles(Job job, String[] strings) throws IOException {
+	public static void addCacheFiles(Job job, String[] strings) throws IOException {
 		FileSystem fs = FileSystem.get(job.getConfiguration());
 		for (String file : strings) {
 			Path p = new Path(file);	
@@ -48,6 +51,15 @@ public class Utils {
 				fs.copyFromLocalFile(p, p);
 			}
 			DistributedCache.addCacheFile(p.toUri(), job.getConfiguration());
+		}
+	}
+	
+	private static JsonParser parser = new JsonParser();
+	public static String getTweetText(String tweet) {
+		try {
+			return parser.parse(tweet).getAsJsonObject().get("text").getAsString();
+		} catch (Exception e) {
+			return "";
 		}
 	}
 }

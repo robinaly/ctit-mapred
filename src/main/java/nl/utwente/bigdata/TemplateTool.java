@@ -53,8 +53,8 @@ import org.apache.log4j.Logger;
  * Tool to count words in text.
  *
  */
-public class WordCount extends Configured implements Tool {
-	private static final Logger LOG = Logger.getLogger(WordCount.class);
+public class TemplateTool extends Configured implements Tool {
+	private static final Logger LOG = Logger.getLogger(TemplateTool.class);
 
 	/*
 	 * Mapper
@@ -75,14 +75,7 @@ public class WordCount extends Configured implements Tool {
 		@Override
 		public void map(Writable key, Text text, Context context)
 				throws IOException, InterruptedException {
-			Pattern wordPat = Pattern.compile("\\p{Alpha}{3,}");
-			String textString = text.toString();
-			// uncomment if the the text is a tweet and you only want the 
-			// textString = Utils.getTweetText(textString);
-			Matcher m = wordPat.matcher(textString);
-			while (m.find()) {
-				context.write(new Text(m.group()), new IntWritable(1));
-			}
+
 		}
 
 		@Override
@@ -107,11 +100,6 @@ public class WordCount extends Configured implements Tool {
 		@Override
 		public void reduce(Text key, Iterable<IntWritable> values,
 				Context context) throws IOException, InterruptedException {
-			int sum = 0;
-			for (IntWritable val : values) {
-				sum += val.get();
-			}
-			context.write(key, new IntWritable(sum));
 		}
 
 		@Override
@@ -147,17 +135,12 @@ public class WordCount extends Configured implements Tool {
 				InterruptedException {
 			super.setup(context);
 			LOG.info("Starting reducer");
-
 		}
 
 		@Override
 		public void reduce(Text key, Iterable<IntWritable> values,
 				Context context) throws IOException, InterruptedException {
-			int sum = 0;
-			for (IntWritable val : values) {
-				sum += val.get();
-			}
-			context.write(key, new IntWritable(sum));
+
 		}
 
 		@Override
@@ -170,7 +153,7 @@ public class WordCount extends Configured implements Tool {
 	public void run(String inputPath, String outPath) throws Exception {
 		Configuration conf = getConf();
 		Job job = Job.getInstance(conf);
-		job.setJarByClass(WordCount.class);
+		job.setJarByClass(TemplateTool.class);
 		job.setJobName(String.format("%s [%s, %s]", this.getClass()
 				.getName(), inputPath, outPath));
 
@@ -273,10 +256,10 @@ public class WordCount extends Configured implements Tool {
 		return 0;
 	}
 
-	public WordCount() {
+	public TemplateTool() {
 	}
 
 	public static void main(String[] args) throws Exception {
-		ToolRunner.run(new WordCount(), args);
+		ToolRunner.run(new TemplateTool(), args);
 	}
 }
