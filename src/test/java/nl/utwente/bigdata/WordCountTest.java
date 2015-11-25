@@ -32,8 +32,8 @@ public class WordCountTest {
 		mapDriver.addInput(NullWritable.get(),
 				new Text("{\"text\": \"hello\"}"));
 
-		mapDriver.withOutput(new Text("hello"), new IntWritable(1));
-
+		mapDriver.addOutput(new Text("text"), new IntWritable(1));
+		mapDriver.withOutput(new Text("hello"), new IntWritable(1));		
 		mapDriver.runTest();
 	}
 

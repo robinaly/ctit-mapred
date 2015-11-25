@@ -34,9 +34,6 @@ public class TemplateToolTest {
 	public void testMapper() throws IOException {
 		mapDriver.addInput(NullWritable.get(),
 				new Text("{\"text\": \"hello\"}"));
-
-		mapDriver.withOutput(new Text("hello"), new IntWritable(1));
-
 		mapDriver.runTest();
 	}
 
@@ -45,8 +42,6 @@ public class TemplateToolTest {
 
 		reduceDriver.withInput(new Text("hello"), Lists.newArrayList(
 				new IntWritable(1), new IntWritable(2), new IntWritable(3)));
-
-		reduceDriver.withOutput(new Text("hello"), new IntWritable(6));
 
 		reduceDriver.runTest();
 	}
